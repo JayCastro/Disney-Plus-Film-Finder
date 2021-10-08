@@ -1,0 +1,84 @@
+---
+title: "Disney Plus Movie/TV Selection"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: 
+      version: 4
+      bootswatch: minty
+    source: embed
+    smart: false
+runtime: shiny
+    
+---
+
+
+
+```{r global, include=FALSE}
+library( flexdashboard )
+library( tidyverse )
+library( shiny )
+library( DT )
+library( pander )
+library( knitr )
+library( rsconnect )
+library(shinyWidgets)
+library(readxl)
+library(shinythemes)
+
+disney_plus_titles <- read_excel("./disney_plus_titles.xlsx")
+
+
+
+disney_plus_titles <- disney_plus_titles[, (colnames(disney_plus_titles) %in% c('type','title','director','cast', "release_year","rating","duration", "listed_in", "description"))]
+
+disney_plus_titles$release_year <- round(disney_plus_titles$release_year)
+```
+
+=======================
+
+Inputs {.sidebar}
+----------------------
+```{r}
+
+                     
+selectInput("type", label = h3("Film Type"),
+                   choices = c("Movie","TV Show"))
+
+sliderInput("release_year", "Disney Release Year",
+            min = 1928, max = 2021, value = c(1980,2000), sep = "", dragRange = T)
+
+checkboxGroupInput("rating", label = h3("Movie & TV Ratings"),
+                   choices = c("PG-13","PG","G","TV-14","TV-PG","TV-G","TV-Y7-FV","TV-Y7","TV-Y"),
+                   selected = c("PG-13","PG","G","TV-14","TV-PG","TV-G","TV-Y7-FV","TV-Y7","TV-Y"))
+
+
+textInput("listed_in", "Type in Catergory: (Single Value)",NULL)
+
+```
+
+Outputs
+---------------
+```{r}
+tableOutput("my_table")
+
+
+ renderTable({
+     disney_plus_titles <- subset(disney_plus_titles, type == input$type )
+     disney_plus_titles <- subset(disney_plus_titles, rating == input$rating )
+     
+     disney_plus_titles <- subset(
+ disney_plus_titles,
+ release_year >= input$release_year[1] & release_year <=input$release_year[2]
+ ) 
+  p <- input$listed_in
+  if(p != '')
+      disney_plus_titles %>% filter(Reduce(`&`, lapply(strsplit(p,' ')[[1]], grepl, listed_in,ignore.case=T)))
+    else
+      disney_plus_titles
+  
+
+})
+
+```
+
+
